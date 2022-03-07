@@ -1,0 +1,46 @@
+{
+    "__default__" :
+    {
+      "account" : "denap",
+      "queue" : "default",
+      "nodes" : 1,
+      "time" : "71:00:00",
+      "mem" : "10gb",
+      "ncpus" : "1"
+    },
+    "prepare_rmt":
+    {
+      "ncpus" : "1",
+      "mem" : "1gb",
+      "time" : "00:01:00"
+    },
+    "mutation_simulator":
+    {
+      "ncpus" : "1",
+      "mem" : "10gb",
+      "time" : "71:00:00"
+    },
+    "read_simulation":
+    {
+      "ncpus" : "7",
+      "mem" : "30gb",
+      "time" : "03:59:00"
+    },
+   "gzip_reads":
+    {
+      "ncpus" : "1",
+      "mem" : "1gb",
+      "time" : "48:00:00"
+    },
+   "subsetting_reads":
+    {
+      "ncpus" : "1",
+      "mem" : "1gb",
+      "time" : "71:00:00"
+    },
+   "mapping":
+    {
+      "ncpus" : "4",
+      "mem" : "25gb",
+      "time" : "71:00:00"
+}
