@@ -32,7 +32,7 @@ rule all:
 
 rule manta1:
 	input:
-		bam=PATH_SCRATCH+"bamfiles/bamfiles_inversions/{sample}_{run}_{ploid}_{rate}_longranger/outs/phased_possorted_bam.bam",
+		bam=PATH_SCRATCH+"{sample}_{run}_{ploid}_{rate}_longranger/outs/phased_possorted_bam.bam",
 		ref=FASTA
 	output:
 		py="evaluation/{sample}_{run}_{ploid}_{rate}.mantadir/runWorkflow.py"
