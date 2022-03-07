@@ -6,7 +6,7 @@
 2) LRsim (version 1.0) (https://github.com/aquaskyline/LRSIM)
 3) LongRanger wgs (version 2.2.2) (https://github.com/10XGenomics/longranger)
 
-### Snakemake workflow for SV detection using seven SV callers based on the simulated linked-read sequencing data:
+### Snakemake workflow for SV detection based on simulated linked-read sequencing data. Included SV callers:
 
 1) Manta (version 1.6) (https://github.com/Illumina/manta)
 2) LEVIATHAN (version 1.0.1) (https://github.com/morispi/LEVIATHAN)
