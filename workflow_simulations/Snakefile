@@ -1,0 +1,116 @@
+from random import randint
+
+configfile: "config.yaml"
+
+FASTA = config["ref"]["fasta"]
+
+PATH_MUT="/gpfs/project/projects/qggp/src/Mutation-Simulator/"
+
+PATH_SNAKE="/gpfs/scratch/mawei111/"
+
+PATH_RMT="/gpfs/project/mawei111/10X_simulations_PotatoTools/keep_rmts/"
+
+HAPLOTYPES = ["haplotype1", "haplotype2", "haplotype3", "haplotype4"]
+
+#Simple simulations
+PLOIDS = ["1_4","2_4","3_4","4_4"]
+SAMPLES = ["del_50_300" ,"del_03_5" ,"del_5_50" ,"del_50_250" ,"del_250_1" ,"ins_50_300" ,"ins_03_5" ,"ins_5_50" ,"ins_50_250" ,"ins_250_1" ,"dup_50_300" ,"dup_03_5" ,"dup_5_50" ,"dup_50_250" ,"dup_250_1" ,"inv_50_300" ,"inv_03_5" ,"inv_5_50" ,"inv_50_250" ,"inv_250_1"]
+RATES=["22","45","68","91"] #Number of X Mio. linked paired-end reads corresponds to 45x, 90x, 135x, and 180x sequencing coverage
+RUNS = ["run1", "run2","run3","run4","run5"] 
+
+#Complex simulations
+SAMPLES = ["complex"]
+PLOIDS = ["0"]
+["run1", "run2","run3","run4","run5","run6", "run7","run8","run9","run10","run11", "run12","run13","run14","run15","run16","run17","run18","run19","run20"]
+
+rule all:
+	input:
+		expand("{haplotype}_{sample}_{run}_{ploid}.fa", sample = SAMPLES, svtype = SVTYPES, ploid = PLOIDS, run = RUNS, haplotype = HAPLOTYPES),
+		expand("{sample}_{run}_{ploid}_{rate}_longranger/outs/phased_possorted_bam.bam", sample = SAMPLES, ploid = PLOIDS, run = RUNS, rate = RATES)
+
+rule prepare_rmt:
+	input:
+		rmt="{haplotype}_{sample}_{run}_{ploid}.rmt"
+	output:
+		rmt="{haplotype}_{sample}_{run}_{ploid}_sorted.rmt"
+	run:
+		shell("""head -n 21 {input.rmt} >{output.rmt}""")
+		shell("""sed -n -e "/chr 1/,/chr 2/ p" {input.rmt} | sed "s/chr 1//g;s/chr 2//g" | sed -r "/^\s*$/d" >>{output.rmt}""")
+		shell("""echo "chr 2" >>{output.rmt}""")
+		shell("""sed -n -e "/chr 2/,/chr 1/ p" {input.rmt} | sed "s/chr 1//g;s/chr 2//g" | sed -r "/^\s*$/d" >>{output.rmt}""")
+
+
+rule mutation_simulator:
+	input:
+		rmt=PATH_RMT+"{haplotype}_{sample}_{run}_{ploid}_sorted.rmt",
+		mut_ref=FASTA
+
+	output:
+		vcf="{haplotype}_{sample}_{run}_{ploid}.vcf",
+		fa="{haplotype}_{sample}_{run}_{ploid}.fa"
+
+	params:
+		mut="{haplotype}_{sample}_{run}_{ploid}"
+
+	shell:
+		"module load Python/3.6.5; "+PATH_MUT+"mutation-simulator2.py -o {params.mut} {input.mut_ref} rmt {input.rmt}"
+
+##intermediate step: cat rule as shell script; Means 1) rule prepare_rmt, mutation_simulator, then bash-script, then following rules
+
+rule read_simulation:
+	input:
+		ref=PATH_SNAKE+"4haplotypes_{sample}_{run}_{ploid}_{rate}.fa"
+	output:
+		reads1="{sample}_{run}_{ploid}_{rate}_S1_L001_R1_001.fastq.gz",
+		reads2="{sample}_{run}_{ploid}_{rate}_S1_L001_R2_001.fastq.gz",
+		reads3="{sample}_{run}_{ploid}_{rate}_S1_L002_R1_001.fastq.gz",
+		reads4="{sample}_{run}_{ploid}_{rate}_S1_L002_R2_001.fastq.gz"
+
+	params:
+		rat="{rate}",
+		sample="{sample}_{run}_{ploid}_{rate}"
+
+	run:
+		shell("""PATH="$HOME/bin:$PATH:/gpfs/project/projects/qggp/src/gsort\"""")
+		shell("""export PATH=$PATH:/gpfs/project/projects/qggp/src:$PATH""")
+		shell("""PATH="$HOME/bin:$PATH:/home/mawei111/.conda/envs/py3/bin/mosdepth\"""")
+		shell("""export PATH=$PATH:/home/mawei111/.conda/envs/py3/bin:mosdepth""")
+
+		shell("mkdir {params.sample}")
+		shell("module load SamTools/1.11 HTSlib/1.11 Java/1.8.0_151 lumpy/0.3.0 sambamba/0.6.6 R/3.6.1 Perl/5.18.1; cd {params.sample}; perl /gpfs/project/projects/qggp/src/LRSIM/simulateLinkedReads.pl -r {input.ref} -p {params.sample} -x {params.rat} -f 50 -t 20 -m 10 -o -n -1 100000000 -z 8 ; mv *.fastq.gz ../ ; cd ../ ")
+
+		shell("rm -r {params.sample}/ {input.ref}")
+######
+
+rule gzip_reads:
+	input:
+		reads1="{sample}_{run}_{ploid}_{rate}_S1_L001_R1_001.fastq.gz",
+		reads2="{sample}_{run}_{ploid}_{rate}_S1_L001_R2_001.fastq.gz",
+		reads3="{sample}_{run}_{ploid}_{rate}_S1_L002_R1_001.fastq.gz",
+		reads4="{sample}_{run}_{ploid}_{rate}_S1_L002_R2_001.fastq.gz"
+	output:
+		reads1="{sample}_{run}_{ploid}_{rate}_reads/{sample}_{run}_{ploid}_{rate}_val_S1_L001_R1_001.fastq.gz",
+		reads2="{sample}_{run}_{ploid}_{rate}_reads/{sample}_{run}_{ploid}_{rate}_val_S1_L001_R2_001.fastq.gz",
+		reads3="{sample}_{run}_{ploid}_{rate}_reads/{sample}_{run}_{ploid}_{rate}_val_S1_L002_R1_001.fastq.gz",
+		reads4="{sample}_{run}_{ploid}_{rate}_reads/{sample}_{run}_{ploid}_{rate}_val_S1_L002_R2_001.fastq.gz"
+	params:
+		dir1=directory("{sample}_{run}_{ploid}_{rate}_reads/")
+	run:
+		shell("""gzip -cd {input.reads1} | sed "/\@/s/\/1//g" | gzip >{output.reads1}""")
+		shell("""gzip -cd {input.reads2} | sed "/\@/s/\/2//g" | gzip >{output.reads2}""")
+		shell("""gzip -cd {input.reads3} | sed "/\@/s/\/1//g" | gzip >{output.reads3}""")
+		shell("""gzip -cd {input.reads4} | sed "/\@/s/\/2//g" | gzip >{output.reads4}""")
+
+		shell("rm {input.reads1} {input.reads2} {input.reads3} {input.reads4}")
+
+rule mapping:
+	input:
+		dummy_file=rules.gzip_reads.output.reads4
+	output:
+		bam="{sample}_{run}_{ploid}_{rate}_longranger/outs/phased_possorted_bam.bam"
+	params:
+		sample="{sample}_{run}_{ploid}_{rate}_longranger",
+		dir1=rules.gzip_reads.params.dir1
+	run:
+		shell("rm -r {params.sample}; module load freebayes/1.3.1; /gpfs/project/projects/qggp/src/longranger-2.2.2/longranger wgs --id={params.sample} --reference=/gpfs/project/mawei111/10X_simulations_PotatoTools/refdata-Agria_assembly_final_2020_21_08_Chr01Chr02 --fastqs={params.dir1} --vcmode freebayes --sex male --localcores=4 --localmem=35")
+		shell("rm -r {params.dir1}; rm -r {params.sample}/PHASER_SVCALLER_CS/")
