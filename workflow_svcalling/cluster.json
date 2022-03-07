@@ -1,0 +1,59 @@
+{
+    "__default__" :
+    {
+      "account" : "denap",
+      "queue" : "default",
+      "nodes" : 1,
+      "time" : "71:00:00",
+      "mem" : "10gb",
+      "ncpus" : "1"
+    },
+    "manta1":
+    {
+      "ncpus" : "1",
+      "mem" : "1gb",
+      "time" : "00:01:00"
+    },
+        "manta2":
+    {
+      "ncpus" : "4",
+      "mem" : "5gb",
+      "time" : "01:59:00"
+    },
+      	"manta3":
+    {
+      "ncpus" : "1",
+      "mem" : "1gb",
+      "time" : "01:59:00"
+    },
+        "leviathan1":
+    {
+      "ncpus" : "1",
+      "mem" : "20gb",
+      "time" : "01:59:00"
+    },
+        "leviathan2":
+    {
+      "ncpus" : "4",
+      "mem" : "80gb",
+      "time" : "71:59:00"
+    },
+    "linkedSV":
+    {
+      "ncpus" : "4",
+      "mem" : "20gb",
+      "time" : "71:00:00"
+    },
+    "valor2":
+    {
+      "ncpus" : "4",
+      "mem" : "10gb",
+      "time" : "71:00:00"
+    },
+    "novelx":
+    {
+      "ncpus" : "5",
+      "mem" : "10gb",
+      "time" : "71:00:00"
+    }
+}
