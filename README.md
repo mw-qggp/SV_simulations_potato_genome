@@ -1,6 +1,6 @@
 # Evaluation of SV detection in the tetraploid potato genome using simulated linked-read sequencing
 
-### Snakemake workflows to create mutated genomes of the first and second chromosome of the dAg1 potato reference sequence (Freire et al. 2021). Included algorithms are:
+### Snakemake workflow to create mutated genomes of the first and second chromosome of the dAg1 potato reference sequence (Freire et al. 2021). Included algorithms are:
 
 1) Mutation-Simulator (version 2.0.3) (https://github.com/mkpython3/Mutation-Simulator)
 2) LRsim (version 1.0) (https://github.com/aquaskyline/LRSIM)
