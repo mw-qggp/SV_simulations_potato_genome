@@ -1,0 +1,123 @@
+from random import randint
+
+configfile: "config.yaml"
+
+FASTA = config["ref"]["fasta"]
+
+PATH_SNAKE="/gpfs/scratch/mawei111/"
+PATH_SCRATCH="/gpfs/scratch/mawei111/"
+
+PATH_PRO="/gpfs/project/mawei111/10X_simulations_PotatoTools/"
+
+#Simple simulations
+SAMPLES = ["del_50_300" ,"del_03_5" ,"del_5_50" ,"del_50_250" ,"del_250_1" ,"ins_50_300" ,"ins_03_5" ,"ins_5_50" ,"ins_50_250" ,"ins_250_1" ,"dup_50_300" ,"dup_03_5" ,"dup_5_50" ,"dup_50_250" ,"dup_250_1" ,"inv_50_300" ,"inv_03_5" ,"inv_5_50" ,"inv_50_250" ,"inv_250_1"]
+PLOIDS = ["1_4","2_4","3_4","4_4"]
+RUNS = ["run1", "run2", "run3", "run4", "run5"]
+
+#Complex simulations
+SAMPLES = ["complex"]
+PLOIDS = ["0"]
+RUNS = ["run1", "run2", "run3", "run4", "run5", "run6", "run7", "run8", "run9", "run10", "run11", "run12", "run13", "run14", "run15", "run16", "run17", "run18", "run19", "run20"]
+
+#Both simulations
+RATES=["22","45","68", "91"] 
+
+rule all:
+	input:
+		expand("evaluation/{sample}_{run}_{ploid}_{rate}.mantadir/results/variants/diploidSV_INV.vcf", sample = SAMPLES, ploid = PLOIDS, run = RUNS, rate = RATES),
+		expand("evaluation/{sample}_{run}_{ploid}_{rate}_leviathan.vcf", sample = SAMPLES, ploid = PLOIDS, run = RUNS, rate = RATES)
+		expand("evaluation/{sample}_{run}_{ploid}_{rate}_linkedSV/phased_possorted_bam.bam.small_deletions.bedpe", sample = SAMPLES, ploid = PLOIDS, run = RUNS, rate = RATES)
+		expand("evaluation/{sample}_{run}_{ploid}_{rate}_valor2/{sample}_{run}_{ploid}_{rate}_valor2.vcf", sample = SAMPLES, ploid = PLOIDS, run = RUNS, rate = RATES)
+		expand("evaluation/{sample}_{run}_{ploid}_{rate}_novelx/phased_possorted_bam.vcf", sample = SAMPLES, ploid = PLOIDS, run = RUNS, rate = RATES)
+
+rule manta1:
+	input:
+		bam=PATH_SCRATCH+"bamfiles/bamfiles_inversions/{sample}_{run}_{ploid}_{rate}_longranger/outs/phased_possorted_bam.bam",
+		ref=FASTA
+	output:
+		py="evaluation/{sample}_{run}_{ploid}_{rate}.mantadir/runWorkflow.py"
+	params:
+		folder="evaluation/{sample}_{run}_{ploid}_{rate}.mantadir/"
+	shell:
+		"/gpfs/project/projects/qggp/src/manta-1.6.0.centos6_x86_64/bin/configManta.py --bam {input.bam} --referenceFasta {input.ref} --runDir {params.folder}"
+
+rule manta2:
+	input:
+		py=rules.manta1.output.py
+	output:
+		vcf="evaluation/{sample}_{run}_{ploid}_{rate}.mantadir/results/variants/diploidSV.vcf.gz"
+	shell:
+		"{input.py} -j 4 -g 5"
+
+rule manta3:
+	input:
+		vcf=rules.manta2.output.vcf,
+		ref=FASTA
+	output:
+		vcf="evaluation/{sample}_{run}_{ploid}_{rate}.mantadir/results/variants/diploidSV_INV.vcf"
+	params:
+		vcf="evaluation/{sample}_{run}_{ploid}_{rate}.mantadir/results/variants/diploidSV.vcf"
+	
+	run:
+		shell("zcat {input.vcf} >{params.vcf}")
+		shell("/gpfs/project/projects/qggp/src/manta-1.6.0.centos6_x86_64/libexec/convertInversion.py /gpfs/project/projects/qggp/src/manta-1.6.0.centos6_x86_64/libexec/samtools {input.ref} {params.vcf} >{output.vcf}")
+		shell("rm {params.vcf}")
+
+rule leviathan1:
+	input:
+		bam=rules.manta1.input.bam
+	output:
+		bci=PATH_SNAKE+"evaluation/{sample}_{run}_{ploid}_{rate}.bci"
+	shell:
+		"module load Boost/1.70.0 zlib/1.2.11 cmake/3.19.1 gcc/8.1.0; /gpfs/project/projects/qggp/src/LEVIATHAN/LRez/bin/LRez index bam -p -b {input.bam} -o {output.bci}"
+
+rule leviathan2:
+	input:
+		bam=rules.manta1.input.bam,
+		bci=rules.leviathan1.output.bci,
+		ref=FASTA
+	output:
+		vcf="evaluation/{sample}_{run}_{ploid}_{rate}_leviathan.vcf"
+	params:
+		folder="evaluation/{sample}_{run}_{ploid}_{rate}_leviathan/",
+		bedpe="evaluation/{sample}_{run}_{ploid}_{rate}_candidates.bedpe",
+		bci=rules.leviathan1.output.bci
+	run:
+		shell("module load Boost/1.70.0 zlib/1.2.11 cmake/3.19.1 gcc/8.1.0; /gpfs/project/projects/qggp/src/LEVIATHAN/bin/LEVIATHAN -t 4 -b {input.bam} -i {input.bci} -g {input.ref} -o {output.vcf} -C {params.bedpe} -r 150 -v 50 -d 1")
+		shell("rm {params.bedpe} {params.bci}")
+
+rule novelx:
+	input:
+		bam=rules.manta1.input.bam,
+		ref=FASTA
+	output:
+		vcf="evaluation/{sample}_{run}_{ploid}_{rate}_novelx/phased_possorted_bam.vcf"
+	params:
+		folder="evaluation/{sample}_{run}_{ploid}_{rate}_novelx/"
+	run:
+		shell("module load Python/3.6.5 Snakemake/6.4.0 BLAST+/2.11.0 Parallel/20150422; rm -r {params.folder}; python /gpfs/project/projects/qggp/src/Novel-X/novel-x.py run -t 5 -m 10 --bam {input.bam} --genome {input.ref} --outdir {params.folder}")
+		shell("rm -r {params.folder}*_bam {params.folder}quast_res/ {params.folder}sample/ {params.folder}.snakemake/ {params.folder}Snakefile {params.folder}config.json {params.folder}path_to_executables_config.json {params.folder}fasta/ {params.folder}*filtered {params.folder}mapped/ {params.folder}possorted_bam_barcodes/ {params.folder}*.fasta {params.folder}*.tsv")
+
+rule linkedSV:
+	input:
+		bam=rules.manta1.input.bam,
+		gaps=PATH_PRO+"sonic_valor2/gaps.bed",
+		black=PATH_PRO+"black_region_dummy.bed",
+		ref=FASTA
+	output:
+		vcf="evaluation/{sample}_{run}_{ploid}_{rate}_linkedSV/phased_possorted_bam.bam.small_deletions.bedpe"
+	params:
+		folder="evaluation/{sample}_{run}_{ploid}_{rate}_linkedSV/"
+	shell:
+		"module load Python/3.6.5 Perl SamTools bedtools gcc/8.1.0 intel/xe2020.2; /gpfs/project/projects/qggp/src/LinkedSV/linkedsv.py -i {input.bam} -d {params.folder} -r {input.ref} -t 4 --gap_region_bed {input.gaps} --black_region_bed {input.black} --min_supp_barcodes 2 --germline_mode"
+
+rule valor2:
+	input:
+		bam=rules.manta1.input.bam,
+		son="dAg1_Chr01Chr02.sonic"
+	output:
+		vcf="evaluation/{sample}_{run}_{ploid}_{rate}_valor2/{sample}_{run}_{ploid}_{rate}_valor2.vcf"
+	params:
+		folder="evaluation/{sample}_{run}_{ploid}_{rate}_valor2/"
+	shell:
+		"module load gcc/8.1.0 zlib/1.2.11; /gpfs/project/projects/qggp/src/valor/valor -i {input.bam} -o {params.folder} -s {input.son} -f INV,DUP,IDUP,TRA,ITRA,DEL -p 4 -c 2 -t 4"
