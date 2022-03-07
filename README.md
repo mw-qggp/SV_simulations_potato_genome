@@ -26,6 +26,6 @@ Additional packages needed to be available:
 
 Python/3.6.5, Snakemake/6.4.0, Boost/1.70.0, zlib/1.2.11, cmake/3.19.1, gcc/8.1.0, Perl/5.18.1, SamTools/1.11, bedtools/2.26.0, gcc/8.1.0, intel/xe2020.2, BLAST+/2.11.0, Parallel/20150422
 
-### References
+## References
 
 [1] Weisweiler, M. and Stich, B. (2022) Benchmarking of structural variant detection in the tetraploid potato genome using linked-read sequencing (In preparation)
