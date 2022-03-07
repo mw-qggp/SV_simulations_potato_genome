@@ -2,7 +2,7 @@
 
 #bash script to create mutated genomes for the different SV types and SV length categories
 
-END=20
+END=5
 for i in $(seq 1 $END)
 do 
 	#Deletions
