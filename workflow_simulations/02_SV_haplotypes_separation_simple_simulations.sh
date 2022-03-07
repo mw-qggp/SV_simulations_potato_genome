@@ -9,7 +9,7 @@ for category in del_50_300 del_03_5 del_5_50 del_50_250 del_250_1
 #for category in indel_ins 
 #for category in indel_del
 do 
-	for((i=1; i < 21; ++i))
+	for((i=1; i < 6; ++i))
 	do
 		touch haplotype1_${category}_run${i}_1_4.rmt haplotype2_${category}_run${i}_1_4.rmt haplotype3_${category}_run${i}_1_4.rmt haplotype4_${category}_run${i}_1_4.rmt
 
@@ -159,6 +159,19 @@ do
 
 				done
 			done
+		done
+	done
+done
+
+#HI scenario 4/4
+
+for sample in del_50_300 del_03_5 del_5_50 del_50_250 del_250_1 inv_50_300 inv_03_5 inv_5_50 inv_50_250 inv_250_1 dup_50_300 dup_03_5 dup_5_50 dup_50_250 dup_250_1 ins_50_300 ins_03_5 ins_5_50 ins_50_250 ins_250_1
+do
+	for run in run1 run2 run3 run4 run5
+	do
+		for rate in 22 45 68 91
+		do
+			cat haploid/*/${run}/${sample}_${run}.fa haploid/*/${run}/${sample}_${run}.fa haploid/*/${run}/${sample}_${run}.fa haploid/*/${run}/${sample}_${run}.fa | awk '/^>/ {print ">chr" ++i; next} {print}' >4haplotypes_${sample}_${run}_4_4_${rate}.fa
 		done
 	done
 done
