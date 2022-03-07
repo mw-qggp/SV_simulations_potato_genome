@@ -55,7 +55,7 @@ rule mutation_simulator:
 	shell:
 		"module load Python/3.6.5; "+PATH_MUT+"mutation-simulator2.py -o {params.mut} {input.mut_ref} rmt {input.rmt}"
 
-#For simple simulations: Execute shell script "05_inter" before contrinue with rule read_simulation
+#For simple simulations: Execute shell script "05_simple_simualtions_interSnakefile_script.sh" before contrinue with rule read_simulation
 #For complex simulations: Snakemake workflow starts from rule read_simulation
 
 rule read_simulation:
